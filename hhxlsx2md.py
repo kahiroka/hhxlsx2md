@@ -6,6 +6,11 @@ MAX_ROW = 1000
 MAX_COL = 1000
 
 def parse_excel_with_hh(xlsx_path, geometry=[0,0,1,1], minblank=1, workaround=[]):
+    if "usebr" in workaround:
+        br = "<br>\n"
+    else:
+        br = "  \n"
+
     wb = load_workbook(xlsx_path, data_only=True)
     for sheetname in wb.sheetnames:
         print(f"# {sheetname}")
@@ -46,13 +51,22 @@ def parse_excel_with_hh(xlsx_path, geometry=[0,0,1,1], minblank=1, workaround=[]
 
                 if value or "dense" in workaround:
                     print(f"{line}", end="")
-                    print(f"{'<br>'.join(str(value).split('\n'))}")
+                    value = str(value)
+                    if "escmd" in workaround:
+                        value = value.replace("---", "--")
+                    value = br.join(
+                        _ for _ in value.splitlines()
+                        if _.strip()
+                        )
+                    print(f"{value}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="")
     parser.add_argument("filename", help="file name")
     parser.add_argument("--geometry", type=str, default="2x2+1+1", help="XxY[+W+H]: default data (X=1,Y=1), header (W=1,H=1)")
     parser.add_argument("--dense", action="store_true", help="display if empty")
+    parser.add_argument("--escmd", action="store_true", help="escape markdown")
+    parser.add_argument("--usebr", action="store_true", help="use <br> rather two spaces")
     parser.add_argument("--minblank", type=int, default=1, help="minimum blank lines: default 1")
     args = parser.parse_args()
 
@@ -63,6 +77,10 @@ if __name__ == "__main__":
     workaround = []
     if args.dense:
         workaround.append("dense")
+    if args.escmd:
+        workaround.append("escmd")
+    if args.usebr:
+        workaround.append("usebr")
     if position[0] < layer[0] or position[1] < layer[1]:
         print(f"geometry mismatch: {geometry}", file=sys.stderr)
         sys.exit()
